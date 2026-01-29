@@ -1,127 +1,191 @@
 # Python A2A Agent Protocol Service
 
-A minimal FastAPI service that speaks the A2A (agent-to-agent) protocol. It exposes metadata and message handling endpoints so another agent or orchestrator can call into this service. The implementation is intentionally lightweight and self-contained.
+A Python implementation of the A2A (Agent-to-Agent) protocol with two server options:
 
-## Quickstart
+| Server | File | Description |
+|--------|------|-------------|
+| **FastAPI (Custom)** | `main.py` | Lightweight FastAPI server with custom session store |
+| **A2A SDK (Official)** | `server.py` | Full A2A SDK with `InMemoryTaskStore`, queue manager, push notifications |
 
-1. Install dependencies (Python 3.10+):
-   ```bash
-   python -m venv .venv
-   .venv\\Scripts\\activate
-   pip install -r requirements.txt
-   ```
-2. Run locally:
-   ```bash
-  # defaults to 1000 concurrent requests and backlog 2048
-  uvicorn main:app --reload --port 8000 --limit-concurrency 1000 --backlog 2048
+---
 
-  # override via env if you prefer running `python main.py`
-  set A2A_MAX_CONCURRENCY=1000
-  set A2A_BACKLOG=2048
-  python main.py
-   ```
-3. Open http://localhost:8000/docs for interactive OpenAPI docs.
+## Quick Start
 
-## Testing
+### 1. Install Dependencies
+```bash
+python -m venv .venv
+.venv\Scripts\activate        # Windows
+# source .venv/bin/activate   # Linux/Mac
+pip install -r requirements.txt
+```
 
-- Unit tests (in-process):
-  ```bash
-  pytest
-  ```
-- Live integration test against a running agent (requires server running and env var):
-  ```bash
-  uvicorn main:app --reload --port 8000
-  set A2A_BASE_URL=http://localhost:8000
-  pytest -m integration
-  ```
+### 2. Run the Server
 
-The unit suite exercises metadata, health, validation (missing user message, empty content), and reply shaping (instructions + context hints). The integration test hits a running agent over HTTP to verify end-to-end behavior.
+#### Option A: FastAPI Server (main.py)
+```bash
+# Simple run
+uvicorn main:app --reload --port 8000
 
-## Call the agent from a script
+# With concurrency settings
+uvicorn main:app --reload --port 8000 --limit-concurrency 1000 --backlog 2048
 
-With the server running (e.g., `uvicorn main:app --reload --port 8000`):
+# Or via Python
+python main.py
+```
+- OpenAPI docs: http://localhost:8000/docs
+- Health check: http://localhost:8000/healthz
 
+#### Option B: A2A SDK Server (server.py)
+```bash
+python server.py
+```
+- Agent Card: http://localhost:8000/.well-known/agent.json
+- Health check: http://localhost:8000/health
+
+### 3. Test the Agent
 ```bash
 set A2A_BASE_URL=http://localhost:8000
 python test_agent.py
 ```
 
-The script posts a small conversation to `/a2a/messages` and prints the JSON response.
+---
 
-## VS Code debugging
+## VS Code Debugging
 
-- Start the "FastAPI: uvicorn (main:app)" configuration in the Run and Debug view. It launches `uvicorn main:app --reload --port 8000` with `A2A_BASE_URL` set for local calls.
+Use **Run and Debug** (F5) and select a configuration:
+
+| Configuration | Description |
+|---------------|-------------|
+| **FastAPI: main.py (Custom Session Store)** | Runs main.py with uvicorn |
+| **A2A SDK Server (In-Memory)** | Runs server.py with in-memory stores |
+| **A2A SDK Server (Redis)** | Runs server.py with Redis backend |
+| **Run Tests** | Runs pytest |
+| **Test Agent Client** | Runs test_agent.py |
+
+---
+
+## Testing
+
+```bash
+# Unit tests
+pytest
+
+# Verbose output
+pytest -v
+
+# Integration tests (requires running server)
+set A2A_BASE_URL=http://localhost:8000
+pytest -m integration
+```
+
+---
+
+## Configuration (Environment Variables)
+
+### Common
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `USE_REDIS` | `false` | Enable Redis storage |
+| `REDIS_HOST` | `localhost` | Redis server host |
+| `REDIS_PORT` | `6379` | Redis server port |
+| `REDIS_PASSWORD` | - | Redis password (optional) |
+
+### main.py Specific
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `A2A_MAX_CONCURRENCY` | `1000` | Max concurrent requests |
+| `A2A_BACKLOG` | `2048` | Connection backlog |
+| `A2A_SESSION_TTL_MINUTES` | `60` | Session expiry time |
+
+### server.py Specific
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `A2A_HOST` | `0.0.0.0` | Server bind address |
+| `A2A_PORT` | `8000` | Server port |
+
+---
 
 ## Endpoints
 
-- `GET /a2a/metadata` — static metadata describing this agent service.
-- `POST /a2a/messages` — submit the conversation state; returns the assistant reply.
-- `POST /a2a/messages/stream` — same as above, but streams the reply in two chunks (demo streaming).
-- `GET /healthz` — simple liveness probe.
+### main.py (FastAPI)
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/a2a/metadata` | Agent metadata |
+| POST | `/a2a/messages` | Send messages (persists to session) |
+| POST | `/a2a/messages/stream` | Stream response |
+| GET | `/a2a/sessions/{id}` | Get session history |
+| DELETE | `/a2a/sessions/{id}` | Delete session |
+| POST | `/a2a/sessions/cleanup` | Remove stale sessions |
+| GET | `/healthz` | Health check |
 
-## Request / Response Examples
+### server.py (A2A SDK)
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/.well-known/agent.json` | Agent Card (A2A spec) |
+| POST | `/` | A2A protocol handler |
+| GET | `/health` | Health check |
 
-### Metadata
+---
+
+## Request Examples
+
+### Send Messages (main.py)
 ```bash
-curl http://localhost:8000/a2a/metadata
+curl -X POST http://localhost:8000/a2a/messages ^
+  -H "Content-Type: application/json" ^
+  -d "{\"session_id\": \"demo\", \"messages\": [{\"role\": \"user\", \"content\": [{\"type\": \"text\", \"text\": \"Hello!\"}]}]}"
 ```
 
-### Send messages
+### Stream Response
 ```bash
-curl -X POST http://localhost:8000/a2a/messages \
-  -H "Content-Type: application/json" \
-  -d '{
-    "session_id": "demo-session-1",
-    "messages": [
-      {"role": "system", "content": [{"type": "text", "text": "You are a helpful agent."}]},
-      {"role": "user", "content": [{"type": "text", "text": "Hello there!"}]}
-    ]
-  }'
+curl -N -X POST http://localhost:8000/a2a/messages/stream ^
+  -H "Content-Type: application/json" ^
+  -d "{\"session_id\": \"demo\", \"messages\": [{\"role\": \"user\", \"content\": [{\"type\": \"text\", \"text\": \"stream please\"}]}]}"
 ```
 
-### Stream messages
+### Get Agent Card (server.py)
 ```bash
-curl -N -X POST http://localhost:8000/a2a/messages/stream \
-  -H "Content-Type: application/json" \
-  -d '{
-    "session_id": "demo-session-1",
-    "messages": [
-      {"role": "user", "content": [{"type": "text", "text": "stream please"}]}
-    ]
-  }'
-```
-This will return the assistant reply split across two streamed chunks.
-
-Sample response:
-```json
-{
-  "messages": [
-    {
-      "role": "assistant",
-      "content": [
-        {"type": "text", "text": "I am a sample A2A agent. You said: 'Hello there!'. Instructions: none. Context: no context provided."}
-      ]
-    }
-  ],
-  "metadata": {
-    "received_at": "2026-01-29T00:00:00.000000Z",
-    "request_ip": "127.0.0.1",
-    "protocol": "a2a-agent-protocol-v1"
-  }
-}
+curl http://localhost:8000/.well-known/agent.json
 ```
 
-## How the sample works
+---
 
-- Request validation and schema definitions are in `main.py` using Pydantic models.
-- `POST /a2a/messages` looks for the latest `user` message and echoes it back with minimal context awareness. Replace `generate_reply` with your own logic (LLM call, tool calling, etc.).
+## Architecture
 
-## Extending with Microsoft Agent Framework (optional)
+```
+┌─────────────────────────────────────────────────────────────┐
+│                     A2A Agent Service                        │
+├─────────────────────────────────────────────────────────────┤
+│  main.py (FastAPI)           │  server.py (A2A SDK)         │
+│  ├─ Custom session store     │  ├─ InMemoryTaskStore        │
+│  ├─ InMemory / Redis         │  ├─ RedisTaskStore           │
+│  └─ Streaming support        │  ├─ QueueManager             │
+│                              │  └─ PushNotificationConfig   │
+├─────────────────────────────────────────────────────────────┤
+│                     Storage Layer                            │
+│  ┌─────────────┐    ┌─────────────┐                         │
+│  │  In-Memory  │    │    Redis    │  (horizontal scaling)   │
+│  └─────────────┘    └─────────────┘                         │
+└─────────────────────────────────────────────────────────────┘
+```
 
-If you want richer orchestration or to call Microsoft Foundry models, add the Agent Framework SDK (preview):
-```bash
+---
+
+## Extending
+
+### Add LLM Integration
+Replace `generate_reply()` in `main.py` or `_generate_response()` in `server.py` with:
+```python
+# Microsoft Foundry / Azure OpenAI
 pip install agent-framework-azure-ai --pre
 ```
+
+### Production Checklist
+- [ ] Enable Redis for session persistence
+- [ ] Configure HTTPS termination
+- [ ] Add authentication middleware
+- [ ] Set up monitoring/logging
+- [ ] Configure rate limiting
 Then swap out `generate_reply` for a call into your agent pipeline.
 
 ## Notes
