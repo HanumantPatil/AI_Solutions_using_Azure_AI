@@ -42,10 +42,15 @@ python test_agent.py
 
 The script posts a small conversation to `/a2a/messages` and prints the JSON response.
 
+## VS Code debugging
+
+- Start the "FastAPI: uvicorn (main:app)" configuration in the Run and Debug view. It launches `uvicorn main:app --reload --port 8000` with `A2A_BASE_URL` set for local calls.
+
 ## Endpoints
 
 - `GET /a2a/metadata` — static metadata describing this agent service.
 - `POST /a2a/messages` — submit the conversation state; returns the assistant reply.
+- `POST /a2a/messages/stream` — same as above, but streams the reply in two chunks (demo streaming).
 - `GET /healthz` — simple liveness probe.
 
 ## Request / Response Examples
@@ -67,6 +72,19 @@ curl -X POST http://localhost:8000/a2a/messages \
     ]
   }'
 ```
+
+### Stream messages
+```bash
+curl -N -X POST http://localhost:8000/a2a/messages/stream \
+  -H "Content-Type: application/json" \
+  -d '{
+    "session_id": "demo-session-1",
+    "messages": [
+      {"role": "user", "content": [{"type": "text", "text": "stream please"}]}
+    ]
+  }'
+```
+This will return the assistant reply split across two streamed chunks.
 
 Sample response:
 ```json

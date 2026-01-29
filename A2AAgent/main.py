@@ -4,6 +4,7 @@ from datetime import datetime
 from typing import Dict, List, Literal, Optional
 
 from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field, validator
 
 app = FastAPI(
@@ -102,7 +103,7 @@ async def get_metadata() -> Metadata:
         version="0.1.0",
         protocol="a2a-agent-protocol-v1",
         capabilities={
-            "supports_streaming": False,
+            "supports_streaming": True,
             "supported_languages": ["en"],
             "content_types": ["text"],
         },
@@ -133,6 +134,28 @@ async def post_messages(payload: A2ARequest, request: Request) -> A2AResponse:
 @app.get("/healthz")
 async def healthcheck() -> Dict[str, str]:
     return {"status": "ok"}
+
+
+@app.post("/a2a/messages/stream")
+async def post_messages_stream(payload: A2ARequest, request: Request) -> StreamingResponse:
+    """Stream the assistant reply in chunks to demonstrate streaming support."""
+
+    reply_text = generate_reply(payload)
+    midpoint = max(1, len(reply_text) // 2)
+
+    async def streamer():
+        yield reply_text[:midpoint].encode("utf-8")
+        yield reply_text[midpoint:].encode("utf-8")
+
+    metadata = {
+        "received_at": datetime.utcnow().isoformat() + "Z",
+        "request_ip": request.client.host if request.client else None,
+        "protocol": "a2a-agent-protocol-v1",
+        "stream": True,
+    }
+
+    headers = {"X-A2A-Metadata": str(metadata)}
+    return StreamingResponse(streamer(), media_type="text/plain", headers=headers)
 
 
 if __name__ == "__main__":

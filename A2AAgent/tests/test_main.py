@@ -71,3 +71,19 @@ def test_post_messages_echoes_instructions_and_context_hint():
     text = resp.json()["messages"][0]["content"][0]["text"]
     assert "keep it short" in text
     assert "context provided" in text
+
+
+def test_post_messages_stream_returns_chunks():
+    payload = {
+        "session_id": "test-session",
+        "messages": [
+            {"role": "user", "content": [{"type": "text", "text": "stream me"}]}
+        ],
+    }
+
+    with client.stream("POST", "/a2a/messages/stream", json=payload) as resp:
+        assert resp.status_code == 200
+        chunks = list(resp.iter_text())
+
+    body = "".join(chunks)
+    assert "stream me" in body
