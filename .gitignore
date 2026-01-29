@@ -1,0 +1,47 @@
+# Editor and OS files
+.vscode/
+.vs/
+.idea/
+*.swp
+*.swo
+Thumbs.db
+.DS_Store
+
+# Python artifacts
+__pycache__/
+*.py[cod]
+*.pyd
+*.pyo
+.venv/
+venv/
+env/
+.env
+.env.*
+.pytest_cache/
+.mypy_cache/
+.cache/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+
+# Python packaging
+*.egg-info/
+dist/
+build/
+pip-wheel-metadata/
+
+# .NET build output
+**/bin/
+**/obj/
+*.user
+*.rsuser
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Logs
+*.log
+
+# Local settings (safe to regenerate)
+local.settings.json
