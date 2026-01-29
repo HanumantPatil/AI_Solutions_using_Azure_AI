@@ -55,6 +55,7 @@ try:
     )
     from a2a.server.events import EventQueue
     from a2a.utils import new_agent_text_message
+    from sample_agent_executor import SampleAgentExecutor
 
     A2A_SDK_AVAILABLE = True
 except ImportError as e:
@@ -80,6 +81,22 @@ except ImportError:
     except ImportError:
         InMemoryPushNotificationConfigStore = None  # type: ignore
 
+# Fallback in-memory push notification store when optional dependency is unavailable
+if InMemoryPushNotificationConfigStore is None:  # type: ignore
+
+    class InMemoryPushNotificationConfigStore:  # type: ignore
+        def __init__(self) -> None:
+            self._store: Dict[str, Dict[str, Any]] = {}
+
+        async def get(self, key: str) -> Optional[Dict[str, Any]]:
+            return self._store.get(key)
+
+        async def set(self, key: str, value: Dict[str, Any]) -> None:
+            self._store[key] = value
+
+        async def delete(self, key: str) -> None:
+            self._store.pop(key, None)
+
 # ---------------------------------------------------------------------------
 # Configuration
 # ---------------------------------------------------------------------------
@@ -90,89 +107,6 @@ REDIS_PASSWORD = os.getenv("REDIS_PASSWORD")
 SERVER_HOST = os.getenv("A2A_HOST", "0.0.0.0")
 SERVER_PORT = int(os.getenv("A2A_PORT", "8000"))
 
-
-# ---------------------------------------------------------------------------
-# Agent Executor Implementation
-# ---------------------------------------------------------------------------
-class SampleAgentExecutor(AgentExecutor):
-    """
-    Sample agent executor that processes messages and returns responses.
-    Replace the execute logic with your actual agent implementation.
-    """
-
-    async def execute(
-        self,
-        task: Task,
-        event_queue: EventQueue,
-    ) -> None:
-        """Execute the agent task and stream results via event_queue."""
-        logger.info(f"Executing task {task.id}")
-
-        # Extract user message from task
-        user_message = self._get_last_user_message(task)
-        if not user_message:
-            await event_queue.enqueue_event(
-                TaskStatusUpdateEvent(
-                    taskId=task.id,
-                    status=TaskStatus(state=TaskState.FAILED),
-                    final=True,
-                )
-            )
-            return
-
-        # Generate response
-        response_text = self._generate_response(user_message, task)
-
-        # Create response message
-        response_message = new_agent_text_message(response_text)
-
-        # Send completed status with response
-        await event_queue.enqueue_event(
-            TaskStatusUpdateEvent(
-                taskId=task.id,
-                status=TaskStatus(
-                    state=TaskState.COMPLETED,
-                    message=response_message,
-                ),
-                final=True,
-            )
-        )
-
-    async def cancel(self, task: Task, event_queue: EventQueue) -> None:
-        """Handle task cancellation."""
-        logger.info(f"Cancelling task {task.id}")
-        await event_queue.enqueue_event(
-            TaskStatusUpdateEvent(
-                taskId=task.id,
-                status=TaskStatus(state=TaskState.CANCELED),
-                final=True,
-            )
-        )
-
-    def _get_last_user_message(self, task: Task) -> Optional[str]:
-        """Extract text from the last user message in the task."""
-        if not task.history:
-            return None
-
-        for message in reversed(task.history):
-            if message.role == "user" and message.parts:
-                texts = []
-                for part in message.parts:
-                    if hasattr(part, "text"):
-                        texts.append(part.text)
-                if texts:
-                    return " ".join(texts)
-        return None
-
-    def _generate_response(self, user_message: str, task: Task) -> str:
-        """Generate a response based on the user message."""
-        turn_count = sum(1 for m in (task.history or []) if m.role == "user")
-        return (
-            f"I am a sample A2A agent using the official SDK. "
-            f"You said: '{user_message}'. "
-            f"Task ID: {task.id}. "
-            f"This is turn {turn_count} in this conversation."
-        )
 
 
 # ---------------------------------------------------------------------------
@@ -219,6 +153,8 @@ def create_server_app(host: str = SERVER_HOST, port: int = SERVER_PORT) -> Starl
         description="Reference implementation of the A2A Agent Protocol using the official SDK.",
         url=f"http://{host}:{port}",
         version="0.2.0",
+        defaultInputModes=["text"],
+        defaultOutputModes=["text"],
         capabilities=AgentCapabilities(
             streaming=True,
             pushNotifications=USE_REDIS and REDIS_AVAILABLE,
@@ -287,7 +223,6 @@ def create_server_app(host: str = SERVER_HOST, port: int = SERVER_PORT) -> Starl
     request_handler = DefaultRequestHandler(
         agent_executor=executor,
         task_store=task_store,
-        push_notification_config_store=push_config_store,
     )
 
     # Create A2A Starlette application

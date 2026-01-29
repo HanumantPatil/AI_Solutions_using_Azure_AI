@@ -1,8 +1,9 @@
 # AI Solutions Using Azure AI
-Two small samples that showcase Azure AI Agents with vector search (Contoso PizzaBot) and a .NET ML regression model exported to ONNX.
+Three small samples that showcase Azure AI Agents with vector search (Contoso PizzaBot), a Python Agent-to-Agent protocol service, and a .NET ML regression model exported to ONNX.
 
 ## Repository Layout
 - [PizzaApp](PizzaApp) — Python agent demo using Azure AI Agents with a custom pizza ordering toolset and Contoso store content.
+- [A2AAgent](A2AAgent) — Python Agent-to-Agent protocol service with FastAPI or the official A2A SDK server.
 - [ONNX](ONNX) — C# console app that trains a simple regression model with ML.NET and exports to ONNX.
 
 ## Prerequisites
@@ -37,6 +38,38 @@ Guided by the in-repo agent persona in [PizzaApp/instructions.txt](PizzaApp/inst
 - Tool responses (prices UTC pickup times) are converted per store in the prompt rules.
 - If you change the vector store ID, update `vector_store_id` in `agent.py`.
 
+## A2AAgent (Agent-to-Agent Protocol Service)
+Python service implementing the A2A protocol with two server options:
+- FastAPI custom server in [A2AAgent/main.py](A2AAgent/main.py)
+- Official A2A SDK server in [A2AAgent/server.py](A2AAgent/server.py)
+
+### What it provides
+- A2A metadata and protocol endpoints (agent card, send messages, stream replies, session history, cleanup) with health checks.
+- Pluggable session stores: in-memory by default, Redis when `USE_REDIS=true`.
+- CLI test client in [A2AAgent/test_agent.py](A2AAgent/test_agent.py) to validate roundtrips.
+- Debug configs for VS Code (F5) covering FastAPI, SDK server, and tests.
+
+### Run the servers
+From the `A2AAgent` folder after creating a virtual environment and installing `requirements.txt`:
+- FastAPI: `uvicorn main:app --reload --port 8000`
+- A2A SDK: `python server.py`
+
+### Test the agent
+Set `A2A_BASE_URL=http://localhost:8000`, then run `python test_agent.py`.
+
+### Key endpoints
+- FastAPI: `/a2a/metadata`, `/a2a/messages`, `/a2a/messages/stream`, `/a2a/sessions/{id}`, `/a2a/sessions/cleanup`, `/healthz`.
+- SDK server: `/.well-known/agent.json`, `/` (protocol handler), `/health`.
+
+### Configuration highlights
+- Redis: `USE_REDIS=true` with `REDIS_HOST`, `REDIS_PORT`, `REDIS_PASSWORD`.
+- Concurrency (FastAPI): `A2A_MAX_CONCURRENCY`, `A2A_BACKLOG`, `A2A_SESSION_TTL_MINUTES`.
+- Host/port (SDK server): `A2A_HOST`, `A2A_PORT`.
+
+### Quick curl examples
+- Send message (FastAPI): `curl -X POST http://localhost:8000/a2a/messages -H "Content-Type: application/json" -d "{\"session_id\":\"demo\",\"messages\":[{\"role\":\"user\",\"content\":[{\"type\":\"text\",\"text\":\"Hello!\"}]}]}"`
+- Agent card (SDK server): `curl http://localhost:8000/.well-known/agent.json`
+
 ## ONNX (ML.NET Regression + Export)
 Simple ML.NET console app that trains on toy `HealthData` and exports both ZIP and ONNX artifacts.
 
@@ -58,4 +91,6 @@ Simple ML.NET console app that trains on toy `HealthData` and exports both ZIP a
 ## Quickstart Commands
 - Python env: `pip install -r PizzaApp/requirements.txt`
 - Run pizza agent: `python PizzaApp/agent.py`
+- A2A FastAPI server: `cd A2AAgent && uvicorn main:app --reload --port 8000`
+- A2A SDK server: `cd A2AAgent && python server.py`
 - Build/run ONNX: `cd ONNX && dotnet run`
