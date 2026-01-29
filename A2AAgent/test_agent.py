@@ -1,6 +1,6 @@
 """Simple client to probe the A2A SDK server.
 
-This script exercises the available HTTP endpoints exposed by `server.py`:
+This script exercises the available HTTP endpoints exposed by `main.py`:
 - GET /health
 - GET /
 - GET /.well-known/agent-card.json (preferred) and agent.json (legacy)
@@ -69,7 +69,7 @@ def main() -> None:
         print("✓ All checks completed")
     except httpx.HTTPError as exc:
         print(f"Request failed: {exc}")
-        print("Is the server running? Start it with `python server.py`.")
+        print("Is the server running? Start it with `python main.py`.")
         sys.exit(1)
 
 

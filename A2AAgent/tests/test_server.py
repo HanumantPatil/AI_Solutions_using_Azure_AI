@@ -6,7 +6,7 @@ from starlette.testclient import TestClient
 
 sys.path.append(str(pathlib.Path(__file__).resolve().parents[1]))
 
-from server import create_server_app
+from main import create_server_app
 
 
 def _client() -> TestClient:

@@ -39,36 +39,30 @@ Guided by the in-repo agent persona in [PizzaApp/instructions.txt](PizzaApp/inst
 - If you change the vector store ID, update `vector_store_id` in `agent.py`.
 
 ## A2AAgent (Agent-to-Agent Protocol Service)
-Python service implementing the A2A protocol with two server options:
-- FastAPI custom server in [A2AAgent/main.py](A2AAgent/main.py)
-- Official A2A SDK server in [A2AAgent/server.py](A2AAgent/server.py)
+Python A2A protocol service using the official `a2a-sdk` Starlette server in [A2AAgent/main.py](A2AAgent/main.py).
 
 ### What it provides
-- A2A metadata and protocol endpoints (agent card, send messages, stream replies, session history, cleanup) with health checks.
-- Pluggable session stores: in-memory by default, Redis when `USE_REDIS=true`.
-- CLI test client in [A2AAgent/test_agent.py](A2AAgent/test_agent.py) to validate roundtrips.
-- Debug configs for VS Code (F5) covering FastAPI, SDK server, and tests.
+- Agent card plus A2A protocol endpoints (send messages, stream replies, fetch sessions, cleanup) with health checks.
+- Swappable storage: in-memory by default; Redis when `USE_REDIS=true`.
+- CLI tester in [A2AAgent/test_agent.py](A2AAgent/test_agent.py) for quick roundtrips.
 
-### Run the servers
-From the `A2AAgent` folder after creating a virtual environment and installing `requirements.txt`:
-- FastAPI: `uvicorn main:app --reload --port 8000`
-- A2A SDK: `python server.py`
+### Run
+From `A2AAgent` after installing `requirements.txt` in a virtual env:
+- `python main.py`
 
-### Test the agent
-Set `A2A_BASE_URL=http://localhost:8000`, then run `python test_agent.py`.
+### Test
+- Automated: `pytest`
+- Manual loop: `python test_agent.py` (set `A2A_BASE_URL` if not localhost)
 
 ### Key endpoints
-- FastAPI: `/a2a/metadata`, `/a2a/messages`, `/a2a/messages/stream`, `/a2a/sessions/{id}`, `/a2a/sessions/cleanup`, `/healthz`.
-- SDK server: `/.well-known/agent.json`, `/` (protocol handler), `/health`.
+- `/.well-known/agent-card.json`, `/.well-known/agent.json` (legacy), `/` (protocol handler), `/health`
 
-### Configuration highlights
-- Redis: `USE_REDIS=true` with `REDIS_HOST`, `REDIS_PORT`, `REDIS_PASSWORD`.
-- Concurrency (FastAPI): `A2A_MAX_CONCURRENCY`, `A2A_BACKLOG`, `A2A_SESSION_TTL_MINUTES`.
-- Host/port (SDK server): `A2A_HOST`, `A2A_PORT`.
+### Config highlights
+- Redis: `USE_REDIS=true` with `REDIS_HOST`, `REDIS_PORT`, `REDIS_PASSWORD`
+- Host/port: `A2A_HOST`, `A2A_PORT`
 
-### Quick curl examples
-- Send message (FastAPI): `curl -X POST http://localhost:8000/a2a/messages -H "Content-Type: application/json" -d "{\"session_id\":\"demo\",\"messages\":[{\"role\":\"user\",\"content\":[{\"type\":\"text\",\"text\":\"Hello!\"}]}]}"`
-- Agent card (SDK server): `curl http://localhost:8000/.well-known/agent.json`
+### Quick curl
+- Agent card: `curl http://localhost:8000/.well-known/agent-card.json`
 
 ## ONNX (ML.NET Regression + Export)
 Simple ML.NET console app that trains on toy `HealthData` and exports both ZIP and ONNX artifacts.

@@ -1,13 +1,13 @@
-"""Placeholder to document FastAPI removal.
+"""Lightweight checks for the consolidated A2A server entrypoint."""
 
-The FastAPI-based implementation has been removed in favor of the official A2A
-SDK server. Tests that relied on the FastAPI routes now live in
-`tests/test_server.py`.
-"""
+import pathlib
+import sys
 
-import pytest
+import main
+
+sys.path.append(str(pathlib.Path(__file__).resolve().parents[1]))
 
 
-@pytest.mark.skip(reason="FastAPI implementation removed; see tests/test_server.py")
-def test_fastapi_removed() -> None:
-    assert True
+def test_exports_available() -> None:
+    assert callable(main.create_server_app)
+    assert callable(main.run_server)
