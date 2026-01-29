@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from datetime import datetime
 from typing import Dict, List, Literal, Optional
 
@@ -161,4 +162,14 @@ async def post_messages_stream(payload: A2ARequest, request: Request) -> Streami
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+    max_concurrency = int(os.getenv("A2A_MAX_CONCURRENCY", "1000"))
+    backlog = int(os.getenv("A2A_BACKLOG", "2048"))
+
+    uvicorn.run(
+        "main:app",
+        host="0.0.0.0",
+        port=8000,
+        reload=True,
+        limit_concurrency=max_concurrency,
+        backlog=backlog,
+    )

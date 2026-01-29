@@ -12,7 +12,13 @@ A minimal FastAPI service that speaks the A2A (agent-to-agent) protocol. It expo
    ```
 2. Run locally:
    ```bash
-   uvicorn main:app --reload --port 8000
+  # defaults to 1000 concurrent requests and backlog 2048
+  uvicorn main:app --reload --port 8000 --limit-concurrency 1000 --backlog 2048
+
+  # override via env if you prefer running `python main.py`
+  set A2A_MAX_CONCURRENCY=1000
+  set A2A_BACKLOG=2048
+  python main.py
    ```
 3. Open http://localhost:8000/docs for interactive OpenAPI docs.
 
