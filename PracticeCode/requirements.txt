@@ -1,0 +1,6 @@
+# install numpy
+numpy==1.24.3
+# pands install
+pandas==2.0.3
+# install matplotlib
+matplotlib==3.7.1
