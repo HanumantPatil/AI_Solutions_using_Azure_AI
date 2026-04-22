@@ -30,6 +30,7 @@ A production-grade IT helpdesk chatbot that resolves employee technical support 
 9. [Deliverables Checklist](#9-deliverables-checklist)
 10. [Setup & Running Locally](#10-setup--running-locally)
 11. [Streamlit UI](#11-streamlit-ui)
+12. [DevUI — Local Agent Testing](#12-devui--local-agent-testing)
 
 ---
 
@@ -1129,6 +1130,7 @@ Goodbye!
 - [x] **D6** — Demo script (`demo/run_demo.py`) with 10 sample queries covering all scenarios
 - [x] **D7** — 145 unit + integration tests passing at **98.64% code coverage** (`pytest` + `pytest-cov`)
 - [x] **D8** — Streamlit web UI (`ui/streamlit_app.py`) with live chat, confidence indicators, ticket/escalation display, source citation expander, session management, role switching, and sample query shortcuts
+- [x] **D9** — DevUI integration (`devui_app.py`) — all four agents (Orchestrator, KB, Ticket, Escalation) registered with Microsoft Agent Framework DevUI for local browser-based testing without deploying to Azure
 
 ---
 
@@ -1181,6 +1183,10 @@ $env:PYTHONUTF8 = "1"; python demo/run_demo.py
 
 # 10. Launch the Streamlit web UI (requires FastAPI server on port 8000)
 .venv\Scripts\streamlit run ui\streamlit_app.py --server.port 8501
+
+# 11. Launch DevUI for browser-based agent testing (no FastAPI server needed)
+$env:PYTHONPATH = "."; python devui_app.py
+# Opens http://localhost:8080 — select an agent and start chatting
 ```
 
 > **Running both the API and Streamlit simultaneously:**
@@ -1292,3 +1298,138 @@ Open **http://localhost:8501** in your browser.
 ### File
 
 `ui/streamlit_app.py` — self-contained, no changes required to any other source file. Calls `POST /api/v1/chat` via `requests` and renders the full `ChatResponse` payload.
+
+---
+
+## 12. DevUI — Local Agent Testing
+
+[Microsoft Agent Framework DevUI](https://learn.microsoft.com/en-us/agent-framework/devui/?pivots=programming-language-python) is a lightweight web application for running and debugging agents interactively without deploying to Azure. It provides a browser chat UI, an OpenAI-compatible REST API (`/v1/*`), and built-in OpenTelemetry tracing.
+
+> **Note:** DevUI is a development tool — it is **not** intended for production use.
+
+### Prerequisites
+
+- Python virtual environment activated
+- `.env` file configured with all Azure resource keys (see [Phase 1](#phase-1--environment--azure-resource-setup))
+- `agent-framework-devui` installed (see below)
+
+### Installation
+
+DevUI is currently in pre-release. Install it with the `--pre` flag:
+
+```bash
+pip install agent-framework-devui agent-framework-openai --pre
+```
+
+Or install all project dependencies (which includes both packages) and then re-install with `--pre`:
+
+```bash
+pip install -r requirements.txt
+pip install agent-framework-devui agent-framework-openai --pre
+```
+
+### Agents Registered
+
+`devui_app.py` at the project root programmatically registers all four helpdesk agents:
+
+| Agent | MAF Name | Tools Exposed | Tests |
+|---|---|---|---|
+| **Orchestrator** | `IT-Helpdesk-Orchestrator` | `route_helpdesk_request` | Full end-to-end intent routing + all sub-agents |
+| **KB Agent** | `IT-KB-Agent` | `search_knowledge_base` | RAG retrieval, RBAC filtering, confidence score |
+| **Ticket Agent** | `IT-Ticket-Agent` | `create_support_ticket`, `get_ticket_status`, `update_ticket_status` | Cosmos DB ticket CRUD in isolation |
+| **Escalation Agent** | `IT-Escalation-Agent` | `escalate_to_human_specialist` | Escalation summary generation + case reference |
+
+### Launch
+
+**Windows PowerShell:**
+```powershell
+# Activate virtual environment first
+.venv\Scripts\Activate.ps1
+
+# Launch DevUI (auto-opens browser)
+$env:PYTHONPATH = "."; python devui_app.py
+
+# Custom port
+$env:PYTHONPATH = "."; python devui_app.py --port 9000
+
+# API-only (no browser auto-open)
+$env:PYTHONPATH = "."; python devui_app.py --no-open
+```
+
+**Linux / macOS:**
+```bash
+PYTHONPATH=. python devui_app.py
+```
+
+DevUI starts at **http://localhost:8080** (or your chosen port) and opens automatically in your default browser.
+
+### CLI Options
+
+| Flag | Default | Description |
+|---|---|---|
+| `--port` / `-p` | `8080` | HTTP port for the DevUI server |
+| `--host` | `127.0.0.1` | Host address to bind to |
+| `--no-open` | — | Suppress automatic browser launch |
+
+### Using the Web Interface
+
+1. Open **http://localhost:8080** in a browser.
+2. The left panel lists the four registered agents.
+3. Select **IT-Helpdesk-Orchestrator** for realistic end-to-end testing, or select an individual sub-agent to test it in isolation.
+4. Type a query and press **Send** — the agent calls its tools and streams back a response.
+5. Click the **Traces** tab to inspect OpenTelemetry spans for each tool call.
+
+### Sample DevUI Queries by Agent
+
+**Orchestrator (end-to-end routing):**
+```
+session_id: devui-001  user_id: emp-001  user_role: employee
+How do I connect to the corporate VPN?
+
+session_id: devui-002  user_id: emp-001  user_role: employee
+Create a ticket for my laptop not booting. Also, what software is approved for code editing?
+```
+
+**KB Agent (RAG isolation):**
+```
+query: What changed in VPN config between 2025 and 2026?  user_role: employee
+query: Show me the security incident playbook.             user_role: it_admin
+```
+
+**Ticket Agent (Cosmos DB isolation):**
+```
+create_support_ticket  user_id: emp-001  title: Black screen  description: Laptop screen went black after update
+get_ticket_status      ticket_id: TKT-ABCD1234  user_id: emp-001
+update_ticket_status   ticket_id: TKT-ABCD1234  user_id: emp-001  new_status: resolved
+```
+
+**Escalation Agent (escalation flow):**
+```
+session_id: devui-esc-001  user_id: emp-001
+conversation_summary: VPN keeps disconnecting after 10 min. Tried reinstall and firewall rules — still failing.
+```
+
+### Using the OpenAI-Compatible API
+
+DevUI exposes a `/v1/` API that accepts OpenAI Responses API calls. You can drive it from any OpenAI SDK client:
+
+```python
+from openai import OpenAI
+
+client = OpenAI(
+    base_url="http://localhost:8080/v1",
+    api_key="not-needed",  # no auth required for local DevUI
+)
+
+response = client.responses.create(
+    metadata={"entity_id": "IT-Helpdesk-Orchestrator"},
+    input="How do I reset my password?",
+)
+
+print(response.output[0].content[0].text)
+```
+
+### File
+
+`devui_app.py` — project-root entry point. No changes to `src/` are required.
+All agents are wired to existing use cases via the same composition root pattern used in `dependencies.py`.

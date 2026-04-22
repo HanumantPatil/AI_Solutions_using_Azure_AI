@@ -1,6 +1,11 @@
 # Agent framework — Azure AI Agent Service SDK
 azure-ai-projects>=1.0.0
 
+# DevUI — local interactive testing UI for Microsoft Agent Framework
+# Install with: pip install agent-framework-devui agent-framework-openai --pre
+agent-framework-devui
+agent-framework-openai
+
 # Azure service SDKs
 azure-search-documents>=11.4.0
 azure-cosmos>=4.6.0
