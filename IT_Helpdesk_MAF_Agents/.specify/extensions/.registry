@@ -1,0 +1,86 @@
+{
+  "schema_version": "1.0",
+  "extensions": {
+    "git": {
+      "version": "1.0.0",
+      "source": "local",
+      "manifest_hash": "sha256:9731aa8143a72fbebfdb440f155038ab42642517c2b2bdbbf67c8fdbe076ed79",
+      "enabled": true,
+      "priority": 10,
+      "registered_commands": {
+        "copilot": [
+          "speckit.git.feature",
+          "speckit.git.validate",
+          "speckit.git.remote",
+          "speckit.git.initialize",
+          "speckit.git.commit"
+        ]
+      },
+      "registered_skills": [],
+      "installed_at": "2026-04-23T12:23:06.321549+00:00"
+    },
+    "brownfield": {
+      "version": "1.0.0",
+      "source": "local",
+      "manifest_hash": "sha256:671babc47c752bf18868d0aeeef66f0fc4f37c6cf52622cfa07e8715fb5ac4a6",
+      "enabled": true,
+      "priority": 10,
+      "registered_commands": {
+        "copilot": [
+          "speckit.brownfield.scan",
+          "speckit.brownfield.bootstrap",
+          "speckit.brownfield.validate",
+          "speckit.brownfield.migrate"
+        ]
+      },
+      "registered_skills": [],
+      "installed_at": "2026-04-23T12:51:18.596090+00:00"
+    },
+    "checkpoint": {
+      "version": "1.0.0",
+      "source": "local",
+      "manifest_hash": "sha256:f1f8587fcfee109d13e5fd2837df498439695218b32d00083f6e98095fca64c0",
+      "enabled": true,
+      "priority": 10,
+      "registered_commands": {
+        "copilot": [
+          "speckit.checkpoint.commit"
+        ]
+      },
+      "registered_skills": [],
+      "installed_at": "2026-04-23T12:51:33.592972+00:00"
+    },
+    "bugfix": {
+      "version": "1.0.0",
+      "source": "local",
+      "manifest_hash": "sha256:52d11bc3b1912949516c4cfdd730acc138c362699aa6eb1357c7343e85d37f6c",
+      "enabled": true,
+      "priority": 10,
+      "registered_commands": {
+        "copilot": [
+          "speckit.bugfix.report",
+          "speckit.bugfix.patch",
+          "speckit.bugfix.verify"
+        ]
+      },
+      "registered_skills": [],
+      "installed_at": "2026-04-23T12:51:35.105027+00:00"
+    },
+    "diagram": {
+      "version": "1.0.0",
+      "source": "local",
+      "manifest_hash": "sha256:a2ab4ddf44a45c8bfd7f0a0a75e3aa2075d0135e1e288c6d70974f8b37d0621d",
+      "enabled": true,
+      "priority": 10,
+      "registered_commands": {
+        "copilot": [
+          "speckit.diagram.workflow",
+          "speckit.diagram.status",
+          "speckit.diagram.dependencies"
+        ]
+      },
+      "registered_skills": [],
+      "installed_at": "2026-04-23T12:52:23.688881+00:00"
+    }
+  }
+}
