@@ -1,90 +1,56 @@
 # AI Solutions Using Azure AI
-Three small samples that showcase Azure AI Agents with vector search (Contoso PizzaBot), a Python Agent-to-Agent protocol service, and a .NET ML regression model exported to ONNX.
 
-## Repository Layout
-- [PizzaApp](PizzaApp) — Python agent demo using Azure AI Agents with a custom pizza ordering toolset and Contoso store content.
-- [A2AAgent](A2AAgent) — Python Agent-to-Agent protocol service with FastAPI or the official A2A SDK server.
-- [ONNX](ONNX) — C# console app that trains a simple regression model with ML.NET and exports to ONNX.
+This repository contains multiple Azure AI, agentic, and learning-focused solutions across Python and .NET.
+
+## Solution Catalog
+
+| Solution | Tech | Summary |
+| --- | --- | --- |
+| [A2AAgent](A2AAgent) | Python, FastAPI, A2A SDK | Agent-to-agent protocol service with agent card discovery, streaming support, and tests. |
+| [A2AWithAGUI](A2AWithAGUI) | Python, FastAPI, Agent Framework | Dual-protocol pizza assistant exposing both A2A and AG-UI endpoints with SSE streaming. |
+| [PizzaApp](PizzaApp) | Python, Azure AI Agents | Contoso pizza ordering assistant with tools and vector search-backed context. |
+| [IT_Helpdesk_MAF_Agents](IT_Helpdesk_MAF_Agents) | Python, MAF, Azure AI Search, Cosmos DB | Multi-agent IT helpdesk with RAG, ticketing, escalation, and clean architecture. |
+| [LangChainApp](LangChainApp) | Python, LangChain, Azure OpenAI | Basic Azure AI Foundry + LangChain examples for chat, prompt chains, and multi-turn context. |
+| [MAF-Demos](MAF-Demos) | Python, Microsoft Agent Framework | Workflow demos focused on executors, handlers, edges, and visualization output. |
+| [ContosoHRAgent](ContosoHRAgent) | .NET, Microsoft Teams, Semantic Kernel | Contoso HR-focused agent app with Teams integration and managed identity token flow. |
+| [OrchestrateAgent](OrchestrateAgent) | .NET, Clean Architecture, Web API | Multi-project .NET solution with API, identity, persistence, and test projects. |
+| [CodeApp](CodeApp) | .NET | C# practice and algorithm examples (console-based). |
+| [ONNX](ONNX) | .NET, ML.NET, ONNX | ML.NET regression training sample that exports model artifacts to ONNX. |
+| [PracticeCode](PracticeCode) | Python, NumPy, pandas | Python practice scripts and notebooks for language and data-analysis basics. |
 
 ## Prerequisites
-- Azure subscription with access to Azure AI Foundry (for Agents and vector stores).
-- Python 3.10+ with `pip`.
-- .NET 8 SDK for the ONNX sample.
-- `PROJECT_CONNECTION_STRING` environment variable pointing to your Azure AI project endpoint (used by the Python samples).
 
-## PizzaApp (Azure AI Agents + Contoso Pizza)
-Guided by the in-repo agent persona in [PizzaApp/instructions.txt](PizzaApp/instructions.txt). Tools include:
-- Vector search over Contoso Pizza store docs (preloaded `vs_WlkZVc11hBdT6A3zvuDwk5X5`).
-- Function tool `calculate_pizza_for_people` for sizing orders.
-- MCP tool for Contoso Pizza microservices (menu, toppings, orders).
+* Python 3.10+ and `pip` for Python samples.
+* .NET SDK 8+ for current .NET projects.
+* Azure subscription and Azure AI resources for cloud-integrated samples.
 
-### Setup
-1) Create and activate a virtual environment.
-2) Install deps: `pip install -r PizzaApp/requirements.txt`.
-3) Set env vars (e.g., in `.env`):
-	 - `PROJECT_CONNECTION_STRING=<your-azure-ai-project-endpoint>`
-	 - Optional Azure auth vars for `DefaultAzureCredential`.
-4) Confirm docs exist in `PizzaApp/documents` (sample Contoso markdown files included).
+## Quick Start
 
-### Upload or Rebuild the Vector Store
-- Use [PizzaApp/add_data.py](PizzaApp/add_data.py) to upload files from `./documents` and create a vector store. Script prints created store and batch IDs.
+### Python examples
 
-### Run the Agent Loop
-- Execute [PizzaApp/agent.py](PizzaApp/agent.py) to start a CLI chat loop that sends user input to the Azure AI Agent and streams replies.
-- The agent auto-approves MCP calls via `MyRunHandler` and uses automatic function calling. Type `exit` or `quit` to stop.
+```bash
+pip install -r A2AAgent/requirements.txt
+python A2AAgent/main.py
+```
 
-### Notes
-- Reuse a single `AIProjectClient` and vector store to avoid unnecessary resource creation.
-- Tool responses (prices UTC pickup times) are converted per store in the prompt rules.
-- If you change the vector store ID, update `vector_store_id` in `agent.py`.
+```bash
+pip install -r PizzaApp/requirements.txt
+python PizzaApp/agent.py
+```
 
-## A2AAgent (Agent-to-Agent Protocol Service)
-Python A2A protocol service using the official `a2a-sdk` Starlette server in [A2AAgent/main.py](A2AAgent/main.py).
+### .NET examples
 
-### What it provides
-- Agent card plus A2A protocol endpoints (send messages, stream replies, fetch sessions, cleanup) with health checks.
-- Swappable storage: in-memory by default; Redis when `USE_REDIS=true`.
-- CLI tester in [A2AAgent/test_agent.py](A2AAgent/test_agent.py) for quick roundtrips.
+```bash
+cd ONNX
+dotnet run
+```
 
-### Run
-From `A2AAgent` after installing `requirements.txt` in a virtual env:
-- `python main.py`
+```bash
+cd CodeApp
+dotnet run
+```
 
-### Test
-- Automated: `pytest`
-- Manual loop: `python test_agent.py` (set `A2A_BASE_URL` if not localhost)
+## Notes
 
-### Key endpoints
-- `/.well-known/agent-card.json`, `/.well-known/agent.json` (legacy), `/` (protocol handler), `/health`
-
-### Config highlights
-- Redis: `USE_REDIS=true` with `REDIS_HOST`, `REDIS_PORT`, `REDIS_PASSWORD`
-- Host/port: `A2A_HOST`, `A2A_PORT`
-
-### Quick curl
-- Agent card: `curl http://localhost:8000/.well-known/agent-card.json`
-
-## ONNX (ML.NET Regression + Export)
-Simple ML.NET console app that trains on toy `HealthData` and exports both ZIP and ONNX artifacts.
-
-### Build and Run
-- From `ONNX` folder: `dotnet build` then `dotnet run` (uses `net8.0`).
-- Outputs:
-	- Prediction printed to console for `Freq = 2.5`.
-	- Saved model ZIP: `./Models/HealthModel.zip`.
-	- ONNX export: `./Models/HealthModel.onnx`.
-
-### Project Files
-- [Program.cs](ONNX/Program.cs) contains data classes, pipeline, training, prediction, and model export logic.
-- NuGet dependencies resolved via the generated project assets in `obj/`.
-
-## Responsible AI and Diagnostics
-- Enable Azure AI diagnostic logging when responses or latency look off (capture the SDK diagnostic string).
-- Handle `429` throttling with retries; reuse clients rather than creating new ones per request.
-
-## Quickstart Commands
-- Python env: `pip install -r PizzaApp/requirements.txt`
-- Run pizza agent: `python PizzaApp/agent.py`
-- A2A FastAPI server: `cd A2AAgent && uvicorn main:app --reload --port 8000`
-- A2A SDK server: `cd A2AAgent && python server.py`
-- Build/run ONNX: `cd ONNX && dotnet run`
+* Each solution folder contains its own dependencies and entry points.
+* See per-solution README files for environment variables, setup details, and testing instructions.
