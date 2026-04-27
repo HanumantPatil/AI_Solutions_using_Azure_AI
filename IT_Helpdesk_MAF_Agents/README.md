@@ -31,6 +31,7 @@ A production-grade IT helpdesk chatbot that resolves employee technical support 
 10. [Setup & Running Locally](#10-setup--running-locally)
 11. [Streamlit UI](#11-streamlit-ui)
 12. [DevUI — Local Agent Testing](#12-devui--local-agent-testing)
+13. [Screenshots](#13-screenshots)
 
 ---
 
@@ -1433,3 +1434,27 @@ print(response.output[0].content[0].text)
 
 `devui_app.py` — project-root entry point. No changes to `src/` are required.
 All agents are wired to existing use cases via the same composition root pattern used in `dependencies.py`.
+
+---
+
+## 13. Screenshots
+
+### 1. Application Home / Chat View
+
+![Application Home / Chat View](ScreenShots/1.png)
+
+### 2. Knowledge Base Response Flow
+
+![Knowledge Base Response Flow](ScreenShots/2.png)
+
+### 3. Ticket Management Flow
+
+![Ticket Management Flow](ScreenShots/3.png)
+
+### 4. Escalation Flow
+
+![Escalation Flow](ScreenShots/4.png)
+
+### 5. End-to-End Interaction Snapshot
+
+![End-to-End Interaction Snapshot](ScreenShots/5.png)
