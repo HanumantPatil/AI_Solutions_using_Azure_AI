@@ -36,7 +36,7 @@ public class ToyBuilder
     }
 }
 
-// Usage 
+// Usage dotnet script Practice01\BuilderDesignPattern.csx
 var toy = new ToyBuilder().SetModel("HP").SetHead("HP Head").Build();
 
 Console.WriteLine($"Toy Model: {toy.Model}, Head: {toy.Head}");
