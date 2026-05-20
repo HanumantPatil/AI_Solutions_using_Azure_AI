@@ -57,7 +57,7 @@ public class Goblin : IMonsterPrototype
         Console.WriteLine($"Goblin Name: {Name}, Health: {Health}, Equipped Weapon: {EquippedWeapon.Name}");
     }
 }
-
+        
 
 // Create our original prototype
 Goblin originalGoblin = new Goblin("Grimtooth", 100, "Rusty Sword");

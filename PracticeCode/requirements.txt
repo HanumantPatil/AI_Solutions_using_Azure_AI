@@ -8,3 +8,6 @@ scikit-learn==1.6.1
 
 ipykernel==6.25.0
 jupyterlab==3.2.1
+openpyxl==3.1.2
+
+
